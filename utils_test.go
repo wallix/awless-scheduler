@@ -3,8 +3,6 @@ package main
 import (
 	"errors"
 	"io/ioutil"
-	"net/http"
-	"testing"
 
 	"github.com/wallix/awless/logger"
 	"github.com/wallix/awless/template"
@@ -29,12 +27,6 @@ func createTmpFSStore() store {
 	}
 
 	return fs
-}
-
-func assertStatus(t *testing.T, resp *http.Response, expect int) {
-	if got, want := resp.StatusCode, expect; got != want {
-		t.Fatalf("got %d, want %d", got, want)
-	}
 }
 
 type happyDriver struct {

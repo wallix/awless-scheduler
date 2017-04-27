@@ -1,12 +1,10 @@
 package main
 
 import (
-	"encoding/json"
-	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
+	"github.com/wallix/awless-scheduler/client"
 	"github.com/wallix/awless/template"
 )
 
@@ -17,20 +15,28 @@ func TestTasksAPI(t *testing.T) {
 	tserver := httptest.NewServer(routes())
 	defer tserver.Close()
 
-	tplText := "create user name=toto\ncreate user name=tata"
-
-	postTemplate := func(txt string) {
-		resp, er := http.Post(tserver.URL+"/tasks?region=us-west-1&run=2m&revert=2h", "application/text", strings.NewReader(txt))
-		if er != nil {
-			t.Fatal(er)
-		}
-		assertStatus(t, resp, 200)
+	schedClient, err := client.New(tserver.URL)
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	postTemplate := func(t *testing.T, txt string) {
+		if err := schedClient.Post(client.Form{
+			Region:   "us-west-1",
+			RunIn:    "2m",
+			RevertIn: "2h",
+			Template: txt,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	tplText := "create user name=toto\ncreate user name=tata"
 
 	t.Run("template successfully received", func(t *testing.T) {
 		defer taskStore.Cleanup()
 
-		postTemplate(tplText)
+		postTemplate(t, tplText)
 
 		tasks, err := taskStore.GetTasks()
 		if err != nil {
@@ -48,20 +54,12 @@ func TestTasksAPI(t *testing.T) {
 	t.Run("listing templates", func(t *testing.T) {
 		defer taskStore.Cleanup()
 
-		postTemplate(tplText)
+		postTemplate(t, tplText)
 
-		resp, err := http.Get(tserver.URL + "/tasks")
+		tasks, err := schedClient.List()
 		if err != nil {
 			t.Fatal(err)
 		}
-		assertStatus(t, resp, 200)
-
-		var tasks []*task
-		err = json.NewDecoder(resp.Body).Decode(&tasks)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer resp.Body.Close()
 
 		if got, want := len(tasks), 1; got != want {
 			t.Fatalf("got %d, want %d", got, want)
@@ -77,7 +75,7 @@ func TestTasksAPI(t *testing.T) {
 	t.Run("executing task", func(t *testing.T) {
 		defer taskStore.Cleanup()
 
-		postTemplate(tplText)
+		postTemplate(t, tplText)
 
 		tasks, err := taskStore.GetTasks()
 		if err != nil {
@@ -115,7 +113,7 @@ func TestTasksAPI(t *testing.T) {
 	t.Run("fail executing driver", func(t *testing.T) {
 		defer taskStore.Cleanup()
 
-		postTemplate(tplText)
+		postTemplate(t, tplText)
 
 		tasks, err := taskStore.GetTasks()
 		if err != nil {
