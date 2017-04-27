@@ -11,7 +11,7 @@ import (
 )
 
 type Client struct {
-	url        *url.URL
+	ServiceURL *url.URL
 	httpClient *http.Client
 }
 
@@ -27,7 +27,7 @@ func New(u string) (*Client, error) {
 	}
 
 	return &Client{
-		url:        addr,
+		ServiceURL: addr,
 		httpClient: &http.Client{Timeout: 3 * time.Second},
 	}, nil
 }
@@ -47,7 +47,7 @@ type Form struct {
 func (c *Client) List() ([]*Task, error) {
 	var tasks []*Task
 
-	addr, _ := url.Parse(c.url.String())
+	addr, _ := url.Parse(c.ServiceURL.String())
 	addr.Path = "tasks"
 
 	resp, err := c.httpClient.Get(addr.String())
@@ -68,7 +68,7 @@ func (c *Client) List() ([]*Task, error) {
 }
 
 func (c *Client) Post(f Form) error {
-	addr, _ := url.Parse(c.url.String())
+	addr, _ := url.Parse(c.ServiceURL.String())
 	addr.Path = "tasks"
 	query := addr.Query()
 	query.Add("region", f.Region)
