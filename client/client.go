@@ -47,7 +47,7 @@ type Form struct {
 func (c *Client) List() ([]*Task, error) {
 	var tasks []*Task
 
-	addr, _ := url.Parse(c.ServiceURL.String())
+	addr := *c.ServiceURL
 	addr.Path = "tasks"
 
 	resp, err := c.httpClient.Get(addr.String())
@@ -68,7 +68,7 @@ func (c *Client) List() ([]*Task, error) {
 }
 
 func (c *Client) Post(f Form) error {
-	addr, _ := url.Parse(c.ServiceURL.String())
+	addr := *c.ServiceURL
 	addr.Path = "tasks"
 	query := addr.Query()
 	query.Add("region", f.Region)
