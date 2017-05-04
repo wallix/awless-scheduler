@@ -56,7 +56,7 @@ func (c *Client) List() ([]*Task, error) {
 	}
 	defer resp.Body.Close()
 
-	if err := notOKStatus(addr.String(), resp); err != nil {
+	if err = notOKStatus(addr.String(), resp); err != nil {
 		return tasks, err
 	}
 
@@ -72,8 +72,12 @@ func (c *Client) Post(f Form) error {
 	addr.Path = "tasks"
 	query := addr.Query()
 	query.Add("region", f.Region)
-	query.Add("run", f.RunIn)
-	query.Add("revert", f.RevertIn)
+	if f.RunIn != "" {
+		query.Add("run", f.RunIn)
+	}
+	if f.RevertIn != "" {
+		query.Add("revert", f.RevertIn)
+	}
 	addr.RawQuery = query.Encode()
 
 	resp, err := c.httpClient.Post(
