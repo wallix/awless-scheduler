@@ -6,6 +6,7 @@ import (
 
 	"github.com/wallix/awless-scheduler/client"
 	"github.com/wallix/awless/template"
+	"github.com/wallix/awless/template/driver"
 )
 
 func TestTasksAPI(t *testing.T) {
@@ -14,6 +15,10 @@ func TestTasksAPI(t *testing.T) {
 
 	tserver := httptest.NewServer(routes())
 	defer tserver.Close()
+
+	driversFunc = func(region string) (driver.Driver, error) {
+		return &happyDriver{}, nil
+	}
 
 	schedClient, err := client.New(tserver.URL)
 	if err != nil {
