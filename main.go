@@ -1,15 +1,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sort"
+	"syscall"
 	"time"
 
 	"github.com/wallix/awless/aws"
@@ -20,12 +24,14 @@ import (
 
 var (
 	hostport        = flag.String("hostport", "localhost:8082", "listening host:port for scheduler service")
+	unixSockMode    = flag.Bool("unix-sock", false, "service uses local unix sock")
 	tickerFrequency = flag.Duration("tick-frequency", 1*time.Minute, "ticker frequency to run executable tasks")
 	debug           = flag.Bool("debug", false, "print debug messages")
 )
 
 var (
 	schedulerDir            = filepath.Join(os.Getenv("HOME"), ".awless-scheduler")
+	sockAddr                = filepath.Join(os.Getenv("HOME"), "awless-scheduler.sock")
 	minDurationBeforeRevert = 1 * time.Minute
 	stillExecutable         = -1 * time.Hour
 	eventc                  = make(chan *event)
@@ -53,8 +59,38 @@ func main() {
 	go t.start()
 	defer t.stop()
 
-	log.Printf("Starting scheduler service on %s", *hostport)
-	log.Fatal(http.ListenAndServe(*hostport, routes()))
+	server := &http.Server{
+		Addr:    *hostport,
+		Handler: routes(),
+	}
+	defer server.Shutdown(context.Background())
+
+	go func() {
+		sigc := make(chan os.Signal, 1)
+		signal.Notify(sigc, os.Kill, os.Interrupt, syscall.SIGTERM)
+		log.Printf("Service terminated with %s. Cleaning up.", <-sigc)
+		server.Shutdown(context.Background())
+	}()
+
+	if *unixSockMode {
+		addr, err := net.ResolveUnixAddr("unix", sockAddr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		l, err := net.ListenUnix("unix", addr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer l.Close()
+
+		server.Addr = addr.String()
+
+		log.Printf("Starting scheduler service on %s", server.Addr)
+		log.Fatal(server.Serve(l))
+	} else {
+		log.Printf("Starting scheduler service on %s", server.Addr)
+		log.Fatal(server.ListenAndServe())
+	}
 }
 
 func routes() http.Handler {
