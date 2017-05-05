@@ -96,6 +96,9 @@ func main() {
 func routes() http.Handler {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("scheduler up!"))
+	})
 	mux.HandleFunc("/tasks", tasks)
 
 	return mux

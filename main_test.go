@@ -38,6 +38,12 @@ func TestTasksAPI(t *testing.T) {
 
 	tplText := "create user name=toto\ncreate user name=tata"
 
+	t.Run("ping service", func(t *testing.T) {
+		if err := schedClient.Ping(); err != nil {
+			t.Fatal(err)
+		}
+	})
+
 	t.Run("template successfully received", func(t *testing.T) {
 		defer taskStore.Cleanup()
 

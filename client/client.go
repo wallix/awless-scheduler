@@ -60,6 +60,18 @@ type Form struct {
 	Template                string
 }
 
+func (c *Client) Ping() error {
+	addr := *c.ServiceURL
+
+	resp, err := c.httpClient.Get(addr.String())
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return notOKStatus(addr.String(), resp)
+}
+
 func (c *Client) List() ([]*Task, error) {
 	var tasks []*Task
 
