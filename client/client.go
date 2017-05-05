@@ -17,12 +17,12 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func LocalClient() *Client {
+func NewLocal() *Client {
 	c, _ := New("http://localhost:8082")
 	return c
 }
 
-func UnixSockClient(u string) *Client {
+func NewUnixSock(u string) *Client {
 	return &Client{
 		ServiceURL: &url.URL{Host: "unixsock", Scheme: "http"}, // context info only
 		httpClient: &http.Client{

@@ -33,7 +33,7 @@ func TestUnixSockClient(t *testing.T) {
 		server.Serve(l)
 	}()
 
-	cli := UnixSockClient(server.Addr)
+	cli := NewUnixSock(server.Addr)
 
 	tasks, err := cli.List()
 	if err != nil {
