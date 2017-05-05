@@ -1,8 +1,8 @@
 # awless-scheduler
 
-The scheduler service is a daemon service that receives template to be ran and reverted at a later time. 
+The scheduler service is a daemon service that receives templates to be ran and reverted at a later time. 
 
-It basically receives templates, validates and store them. Then the service will check every so often when stored templates need to be executed.
+The service basically get templates, validates and stores them. Then it will check every so often when stored templates need to be executed.
 
 # Usage
 
@@ -49,7 +49,7 @@ cli, err := client.NewUnixSock("./scheduler.sock") # Unix sock client pointing t
 Post a template
 
 ```go
-err := schedClient.Post(client.Form{
+err := cli.Post(client.Form{
   Region:   "us-west-1",
   RunIn:    "2m",
   RevertIn: "2h",
@@ -60,5 +60,5 @@ err := schedClient.Post(client.Form{
 List tasks
 
 ```go
-tasks, err := schedClient.List()
+tasks, err := cli.List()
 ```
