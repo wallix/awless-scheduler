@@ -1,9 +1,11 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -18,6 +20,20 @@ type Client struct {
 func LocalClient() *Client {
 	c, _ := New("http://localhost:8082")
 	return c
+}
+
+func UnixSockClient(u string) *Client {
+	return &Client{
+		ServiceURL: &url.URL{Host: "unixsock", Scheme: "http"}, // context info only
+		httpClient: &http.Client{
+			Timeout: 3 * time.Second,
+			Transport: &http.Transport{
+				DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+					return net.Dial("unix", u)
+				},
+			},
+		},
+	}
 }
 
 func New(u string) (*Client, error) {
