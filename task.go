@@ -75,6 +75,7 @@ func (tk *task) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		buffer.WriteString(fmt.Sprintf("\"RunAt\":%s,", jsonValue))
+		buffer.WriteString(fmt.Sprintf("\"RunIn\":\"%s\",", time.Until(tk.RunAt)))
 	}
 	if !tk.RevertAt.IsZero() {
 		jsonValue, err = json.Marshal(tk.RevertAt)
@@ -82,6 +83,7 @@ func (tk *task) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		buffer.WriteString(fmt.Sprintf("\"RevertAt\":%s,", jsonValue))
+		buffer.WriteString(fmt.Sprintf("\"RevertIn\":\"%s\",", time.Until(tk.RevertAt)))
 	}
 	buffer.WriteString(fmt.Sprintf("\"Region\":\"%s\"", tk.Region))
 
