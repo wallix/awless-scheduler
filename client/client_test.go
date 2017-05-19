@@ -81,6 +81,13 @@ func TestHTTPClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if got, want := cli.ServiceInfo().ServiceAddr, "http://"+schedulerAddr; got != want {
+		t.Fatalf("got %s, want %s", got, want)
+	}
+	if got, want := cli.ServiceInfo().UnixSockMode, false; got != want {
+		t.Fatalf("got %t, want %t", got, want)
+	}
+
 	tasks, err := cli.List()
 	if err != nil {
 		t.Fatal(err)

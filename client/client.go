@@ -95,8 +95,8 @@ func (c *Client) Ping() error {
 	return notOKStatus(addr.String(), resp)
 }
 
-func (c *Client) ServiceInfo() *ServiceInfo {
-	return c.serviceInfo
+func (c *Client) ServiceInfo() ServiceInfo {
+	return *c.serviceInfo
 }
 
 func (c *Client) List() ([]*Task, error) {
