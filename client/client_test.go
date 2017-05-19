@@ -46,7 +46,7 @@ func TestUnixSockClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tasks, err := cli.List()
+	tasks, err := cli.ListTasks()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestHTTPClient(t *testing.T) {
 		t.Fatalf("got %t, want %t", got, want)
 	}
 
-	tasks, err := cli.List()
+	tasks, err := cli.ListTasks()
 	if err != nil {
 		t.Fatal(err)
 	}

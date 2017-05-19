@@ -101,11 +101,34 @@ func (c *Client) ServiceInfo() ServiceInfo {
 	return *c.serviceInfo
 }
 
-func (c *Client) List() ([]*Task, error) {
+func (c *Client) ListTasks() ([]*Task, error) {
 	var tasks []*Task
 
 	addr := *c.ServiceURL
 	addr.Path = "tasks"
+
+	resp, err := c.httpClient.Get(addr.String())
+	if err != nil {
+		return tasks, err
+	}
+	defer resp.Body.Close()
+
+	if err = notOKStatus(addr.String(), resp); err != nil {
+		return tasks, err
+	}
+
+	if err = json.NewDecoder(resp.Body).Decode(&tasks); err != nil {
+		return tasks, err
+	}
+
+	return tasks, nil
+}
+
+func (c *Client) ListFailures() ([]*Task, error) {
+	var tasks []*Task
+
+	addr := *c.ServiceURL
+	addr.Path = "failures"
 
 	resp, err := c.httpClient.Get(addr.String())
 	if err != nil {

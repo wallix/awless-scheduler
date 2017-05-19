@@ -174,6 +174,7 @@ func routes() http.Handler {
 		w.Write([]byte("scheduler up!"))
 	})
 	mux.HandleFunc("/tasks", tasks)
+	mux.HandleFunc("/failures", listFailures)
 
 	return mux
 }
@@ -192,21 +193,36 @@ func tasks(w http.ResponseWriter, r *http.Request) {
 
 func listTasks(w http.ResponseWriter, r *http.Request) {
 	tasks, err := taskStore.GetTasks()
+	b, err := marshalTasks(tasks)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	sort.Slice(tasks, func(i int, j int) bool { return !tasks[i].RunAt.Before(tasks[j].RunAt) })
+	w.Write(b)
+}
 
-	b, err := json.MarshalIndent(tasks, "", " ")
+func listFailures(w http.ResponseWriter, r *http.Request) {
+	tasks, err := taskStore.GetFailures()
+	b, err := marshalTasks(tasks)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(b)
+}
+
+func marshalTasks(tasks []*task) ([]byte, error) {
+	sort.Slice(tasks, func(i int, j int) bool { return !tasks[i].RunAt.Before(tasks[j].RunAt) })
+
+	b, err := json.MarshalIndent(tasks, "", " ")
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 func createTask(w http.ResponseWriter, r *http.Request) {

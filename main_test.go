@@ -56,7 +56,7 @@ func TestTasksAPI(t *testing.T) {
 
 		postTemplate(t, tplText)
 
-		tasks, err := taskStore.GetTasks()
+		tasks, err := schedClient.ListTasks()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -74,7 +74,7 @@ func TestTasksAPI(t *testing.T) {
 
 		postTemplate(t, tplText)
 
-		tasks, err := schedClient.List()
+		tasks, err := schedClient.ListTasks()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -95,7 +95,7 @@ func TestTasksAPI(t *testing.T) {
 
 		postTemplate(t, tplText)
 
-		tasks, err := taskStore.GetTasks()
+		tasks, err := schedClient.ListTasks()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -103,7 +103,7 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatalf("got %d, want %d", got, want)
 		}
 
-		task := tasks[0]
+		task := convert(tasks[0])
 
 		env := newTemplateEnv(func(key string) (template.Definition, bool) {
 			return template.Definition{ExtraParams: []string{"name", "user"}}, true
@@ -113,7 +113,7 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		tasks, err = taskStore.GetTasks()
+		tasks, err = schedClient.ListTasks()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -133,7 +133,7 @@ func TestTasksAPI(t *testing.T) {
 
 		postTemplate(t, tplText)
 
-		tasks, err := taskStore.GetTasks()
+		tasks, err := schedClient.ListTasks()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -142,7 +142,7 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatalf("got %d, want %d", got, want)
 		}
 
-		task := tasks[0]
+		task := convert(tasks[0])
 
 		env := newTemplateEnv(func(key string) (template.Definition, bool) {
 			return template.Definition{RequiredParams: []string{"name", "user"}}, true
@@ -151,7 +151,7 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatal("expected error, got nil")
 		}
 
-		tasks, err = taskStore.GetTasks()
+		tasks, err = schedClient.ListTasks()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -160,7 +160,7 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatalf("got %d, want %d", got, want)
 		}
 
-		fails, err := taskStore.GetFailures()
+		fails, err := schedClient.ListFailures()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -173,4 +173,13 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatalf("got \n%q\nwant\n%q\n", got, want)
 		}
 	})
+}
+
+func convert(t *client.Task) *task {
+	return &task{
+		Content:  t.Content,
+		Region:   t.Region,
+		RevertAt: t.RevertAt,
+		RunAt:    t.RunAt,
+	}
 }
