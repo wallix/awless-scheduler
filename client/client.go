@@ -42,7 +42,9 @@ func New(discoveryURL string) (*Client, error) {
 	}
 
 	if v.UnixSockMode {
-		return newUnixSock(v.ServiceAddr), nil
+		c := newUnixSock(v.ServiceAddr)
+		c.serviceInfo = v
+		return c, nil
 	}
 
 	addr, err := url.Parse(v.ServiceAddr)
