@@ -17,12 +17,45 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func NewLocal() *Client {
-	c, _ := New("http://localhost:8082")
-	return c
+type Discovery struct {
+	Uptime       string
+	ServiceAddr  string
+	UnixSockMode bool
 }
 
-func NewUnixSock(u string) *Client {
+func New(discoveryURL string) (*Client, error) {
+	httpClient := &http.Client{Timeout: 3 * time.Second}
+	resp, err := httpClient.Get(discoveryURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	v := Discovery{}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read body at discovery enpoint '%s', status code %s. Error: %s", discoveryURL, resp.Status, err)
+	}
+	if err := json.Unmarshal(body, &v); err != nil {
+		return nil, fmt.Errorf("cannot unmarshal json at discovery enpoint '%s': %s. Body was:\n%s", discoveryURL, err, body)
+	}
+
+	if v.UnixSockMode {
+		return newUnixSock(v.ServiceAddr), nil
+	}
+
+	addr, err := url.Parse(v.ServiceAddr)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse scheduler service addr %s: %s", v.ServiceAddr, err)
+	}
+
+	return &Client{
+		ServiceURL: addr,
+		httpClient: httpClient,
+	}, nil
+}
+
+func newUnixSock(u string) *Client {
 	return &Client{
 		ServiceURL: &url.URL{Host: "unixsock", Scheme: "http"}, // context info only
 		httpClient: &http.Client{
@@ -34,18 +67,6 @@ func NewUnixSock(u string) *Client {
 			},
 		},
 	}
-}
-
-func New(u string) (*Client, error) {
-	addr, err := url.Parse(u)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{
-		ServiceURL: addr,
-		httpClient: &http.Client{Timeout: 3 * time.Second},
-	}, nil
 }
 
 type Task struct {

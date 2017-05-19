@@ -12,14 +12,18 @@ The service basically get templates, validates and stores them. Then it will che
 
 ### Run
 
-As an http daemon:
+As an unix sock daemon:
 
-    go build; ./awless-scheduler     # default to localhost:8082
-    go build; ./awless-scheduler --hostport 0.0.0.0:9090
+    go build; ./awless-scheduler              # default to scheduler service on unix sock
 
-For higher security, as an unix sock daemon:
+As an HTTP daemon:
 
-    go build; ./awless-scheduler --unix-sock
+    go build; ./awless-scheduler --http-mode  # default to scheduler service on localhost:8083
+    go build; ./awless-scheduler --http-mode --scheduler-hostport 0.0.0.0:9090
+
+Clients use the discovery service to know where the scheduler service is running. By default, the discovery service runs on localhost:8082. To run it on a different port:
+
+    ./awless-scheduler --discovery-hostport localhost:9090
 
 # Usage with the `awless` CLI
 
@@ -38,13 +42,13 @@ Examples:
 
 ## Client API
 
-Get a new client
+Create a new client giving the discovery URL:
 
 ```go
-cli, err := client.New("http://10.0.0.1:9090") # HTTP client
-cli, err := client.NewLocal()                  # HTTP client pointing to localhost:8082
-cli, err := client.NewUnixSock("./scheduler.sock") # Unix sock client pointing to localhost:8082
+cli, err := client.New("http://127.0.0.1:8082")
 ```
+
+Behind the scene, the correct client will be instantiated: a UnixSock client or an HTTP client.
 
 Post a template
 

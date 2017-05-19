@@ -1,8 +1,9 @@
 package main
 
 import (
-	"net/http/httptest"
 	"testing"
+
+	"time"
 
 	"github.com/wallix/awless-scheduler/client"
 	"github.com/wallix/awless/template"
@@ -13,14 +14,20 @@ func TestTasksAPI(t *testing.T) {
 	taskStore = createTmpFSStore()
 	defer taskStore.Destroy()
 
-	tserver := httptest.NewServer(routes())
-	defer tserver.Close()
+	service, err := NewSchedulerService(routes(), "127.0.0.1:9090", "127.0.0.1:9091", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.Close()
+
+	go service.Start()
 
 	driversFunc = func(region string) (driver.Driver, error) {
 		return &happyDriver{}, nil
 	}
 
-	schedClient, err := client.New(tserver.URL)
+	time.Sleep(1 * time.Second)
+	schedClient, err := client.New(service.discoveryURL())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +122,7 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatalf("got %d, want %d", got, want)
 		}
 
-		revertTplText := "delete user id=tata\ndelete user id=toto"
+		revertTplText := "delete user name=tata\ndelete user name=toto"
 		if got, want := tasks[0].Content, revertTplText; got != want {
 			t.Fatalf("got \n%q\nwant\n%q\n", got, want)
 		}

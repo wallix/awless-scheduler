@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -23,15 +24,16 @@ import (
 )
 
 var (
-	hostport        = flag.String("hostport", "localhost:8082", "listening host:port for scheduler service")
-	unixSockMode    = flag.Bool("unix-sock", false, "service uses local unix sock")
-	tickerFrequency = flag.Duration("tick-frequency", 1*time.Minute, "ticker frequency to run executable tasks")
-	debug           = flag.Bool("debug", false, "print debug messages")
+	discoveryHostport = flag.String("discovery-hostport", "localhost:8082", "Listening host:port for the discovery service")
+	schedulerHostport = flag.String("scheduler-hostport", "localhost:8083", "Listening host:port for the scheduler service")
+	httpMode          = flag.Bool("http-mode", false, "Scheduler service on HTTP")
+	tickerFrequency   = flag.Duration("tick-frequency", 1*time.Minute, "ticker frequency to run executable tasks")
+	debug             = flag.Bool("debug", false, "print debug messages")
 )
 
 var (
 	schedulerDir            = filepath.Join(os.Getenv("HOME"), ".awless-scheduler")
-	sockAddr                = filepath.Join(os.Getenv("HOME"), "awless-scheduler.sock")
+	SOCK_ADDR               = filepath.Join(os.Getenv("HOME"), "awless-scheduler.sock")
 	minDurationBeforeRevert = 1 * time.Minute
 	stillExecutable         = -1 * time.Hour
 	eventc                  = make(chan *event)
@@ -59,38 +61,110 @@ func main() {
 	go t.start()
 	defer t.stop()
 
-	server := &http.Server{
-		Addr:    *hostport,
-		Handler: routes(),
+	service, err := NewSchedulerService(
+		routes(),
+		*schedulerHostport,
+		*discoveryHostport,
+		*httpMode,
+	)
+	if err != nil {
+		log.Fatal(err)
 	}
-	defer server.Shutdown(context.Background())
+	defer service.Close()
 
 	go func() {
 		sigc := make(chan os.Signal, 1)
 		signal.Notify(sigc, os.Kill, os.Interrupt, syscall.SIGTERM)
 		log.Printf("Service terminated with %s. Cleaning up.", <-sigc)
-		server.Shutdown(context.Background())
+		service.Close()
 	}()
 
-	if *unixSockMode {
-		addr, err := net.ResolveUnixAddr("unix", sockAddr)
+	service.Start()
+}
+
+type Service struct {
+	*http.Server
+	listener          *net.UnixListener
+	httpMode          bool
+	discoveryHostport string
+}
+
+func NewSchedulerService(handler http.Handler, serviceHostport, discoveryHostport string, httpMode bool) (*Service, error) {
+	s := &http.Server{
+		Addr:    serviceHostport,
+		Handler: handler,
+	}
+
+	service := &Service{Server: s, httpMode: httpMode, discoveryHostport: discoveryHostport}
+
+	if !service.httpMode {
+		addr, err := net.ResolveUnixAddr("unix", SOCK_ADDR)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		l, err := net.ListenUnix("unix", addr)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
-		defer l.Close()
-
-		server.Addr = addr.String()
-
-		log.Printf("Starting scheduler service on %s", server.Addr)
-		log.Fatal(server.Serve(l))
-	} else {
-		log.Printf("Starting scheduler service on %s", server.Addr)
-		log.Fatal(server.ListenAndServe())
+		s.Addr = addr.String()
+		service.listener = l
 	}
+
+	return service, nil
+}
+
+func (s *Service) Start() error {
+	go s.startDiscoveryEnpoint()
+	log.Printf("Starting scheduler service on %s", s.addr())
+	if s.httpMode {
+		return s.ListenAndServe()
+	}
+	return s.Serve(s.listener)
+}
+
+func (s *Service) Close() error {
+	log.Print("Closing scheduler service")
+	return s.Shutdown(context.Background())
+}
+
+func (s *Service) addr() string {
+	if s.httpMode {
+		u := url.URL{Host: s.Addr}
+		u.Scheme = "http"
+		return u.String()
+	}
+	return s.Addr
+}
+
+func (s *Service) discoveryURL() string {
+	u := url.URL{Host: s.discoveryHostport}
+	u.Scheme = "http"
+	return u.String()
+}
+
+func (s *Service) startDiscoveryEnpoint() {
+	started := time.Now()
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		v := struct {
+			Uptime       string
+			ServiceAddr  string
+			UnixSockMode bool
+		}{
+			Uptime:       time.Since(started).String(),
+			ServiceAddr:  s.addr(),
+			UnixSockMode: !s.httpMode,
+		}
+		b, err := json.MarshalIndent(v, "", " ")
+		if err != nil {
+			http.Error(w, fmt.Sprintf("cannot marshal json for discovery service: %s", err), http.StatusInternalServerError)
+			return
+		}
+		w.Write(b)
+	})
+
+	log.Printf("Starting HTTP discovery service on %s", s.discoveryURL())
+	log.Fatal(http.ListenAndServe(s.discoveryHostport, nil))
 }
 
 func routes() http.Handler {
