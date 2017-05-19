@@ -13,11 +13,12 @@ import (
 )
 
 type Client struct {
-	ServiceURL *url.URL
-	httpClient *http.Client
+	ServiceURL  *url.URL
+	serviceInfo *ServiceInfo
+	httpClient  *http.Client
 }
 
-type Discovery struct {
+type ServiceInfo struct {
 	Uptime       string
 	ServiceAddr  string
 	UnixSockMode bool
@@ -31,12 +32,12 @@ func New(discoveryURL string) (*Client, error) {
 	}
 	defer resp.Body.Close()
 
-	v := Discovery{}
+	v := &ServiceInfo{}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read body at discovery enpoint '%s', status code %s. Error: %s", discoveryURL, resp.Status, err)
 	}
-	if err := json.Unmarshal(body, &v); err != nil {
+	if err := json.Unmarshal(body, v); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal json at discovery enpoint '%s': %s. Body was:\n%s", discoveryURL, err, body)
 	}
 
@@ -50,8 +51,9 @@ func New(discoveryURL string) (*Client, error) {
 	}
 
 	return &Client{
-		ServiceURL: addr,
-		httpClient: httpClient,
+		ServiceURL:  addr,
+		httpClient:  httpClient,
+		serviceInfo: v,
 	}, nil
 }
 
@@ -91,6 +93,10 @@ func (c *Client) Ping() error {
 	defer resp.Body.Close()
 
 	return notOKStatus(addr.String(), resp)
+}
+
+func (c *Client) ServiceInfo() *ServiceInfo {
+	return c.serviceInfo
 }
 
 func (c *Client) List() ([]*Task, error) {
