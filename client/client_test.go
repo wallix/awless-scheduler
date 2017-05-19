@@ -59,7 +59,7 @@ func TestUnixSockClient(t *testing.T) {
 func TestHTTPClient(t *testing.T) {
 	schedulerAddr := "localhost:9096"
 	discoveryService := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := json.Marshal(&ServiceInfo{ServiceAddr: "http://" + schedulerAddr, UnixSockMode: false})
+		b, _ := json.Marshal(&ServiceInfo{ServiceAddr: "http://" + schedulerAddr, UnixSockMode: false, TickerFrequency: "1m0s"})
 		w.Write(b)
 	}))
 	defer discoveryService.Close()
@@ -86,6 +86,9 @@ func TestHTTPClient(t *testing.T) {
 	}
 	if got, want := cli.ServiceInfo().UnixSockMode, false; got != want {
 		t.Fatalf("got %t, want %t", got, want)
+	}
+	if got, want := cli.ServiceInfo().TickerFrequency, "1m0s"; got != want {
+		t.Fatalf("got %s, want %s", got, want)
 	}
 
 	tasks, err := cli.ListTasks()

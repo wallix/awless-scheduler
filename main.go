@@ -51,6 +51,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("Scheduler home dir: %s", schedulerDir)
 
 	log.Printf("Starting event collector")
 	go collectEvents()
@@ -147,13 +148,15 @@ func (s *Service) startDiscoveryEnpoint() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		v := struct {
-			Uptime       string
-			ServiceAddr  string
-			UnixSockMode bool
+			TickFrequency string
+			Uptime        string
+			ServiceAddr   string
+			UnixSockMode  bool
 		}{
-			Uptime:       time.Since(started).String(),
-			ServiceAddr:  s.addr(),
-			UnixSockMode: !s.httpMode,
+			TickFrequency: (*tickerFrequency).String(),
+			Uptime:        time.Since(started).String(),
+			ServiceAddr:   s.addr(),
+			UnixSockMode:  !s.httpMode,
 		}
 		b, err := json.MarshalIndent(v, "", " ")
 		if err != nil {

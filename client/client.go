@@ -19,9 +19,10 @@ type Client struct {
 }
 
 type ServiceInfo struct {
-	Uptime       string
-	ServiceAddr  string
-	UnixSockMode bool
+	Uptime          string
+	ServiceAddr     string
+	TickerFrequency string
+	UnixSockMode    bool
 }
 
 func New(discoveryURL string) (*Client, error) {
