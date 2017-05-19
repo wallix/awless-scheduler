@@ -8,15 +8,15 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
+
+	"github.com/wallix/awless-scheduler/model"
 )
 
-const awlessFileExt = "aws"
-
 type store interface {
-	Create(tk *task) error
+	Create(tk *model.Task) error
 	Remove(id string) error
-	GetTasks() ([]*task, error)
-	GetFailures() ([]*task, error)
+	GetTasks() ([]*model.Task, error)
+	GetFailures() ([]*model.Task, error)
 	MarkAsFailed(id string) error
 	Cleanup() error
 	Destroy() error
@@ -43,19 +43,19 @@ func NewFSStore(root string) (store, error) {
 	return &fsStore{root: root, tasksDir: tasksDir, failuresDir: failuresDir}, nil
 }
 
-func (fs *fsStore) Create(tk *task) error {
+func (fs *fsStore) Create(tk *model.Task) error {
 	fs.mux.Lock()
 	defer fs.mux.Unlock()
 
-	err := ioutil.WriteFile(filepath.Join(fs.tasksDir, tk.id()), []byte(tk.Content), 0644)
+	err := ioutil.WriteFile(filepath.Join(fs.tasksDir, tk.AsFilename()), []byte(tk.Content), 0644)
 	if err != nil {
 		return fmt.Errorf("cannot create task as file: %s", err)
 	}
 	return nil
 }
 
-func (fs *fsStore) GetTasks() ([]*task, error) {
-	tasks := make([]*task, 0)
+func (fs *fsStore) GetTasks() ([]*model.Task, error) {
+	tasks := make([]*model.Task, 0)
 
 	for _, file := range fs.getTasks() {
 		tk, err := New(file)
@@ -68,8 +68,8 @@ func (fs *fsStore) GetTasks() ([]*task, error) {
 	return tasks, nil
 }
 
-func (fs *fsStore) GetFailures() ([]*task, error) {
-	tasks := make([]*task, 0)
+func (fs *fsStore) GetFailures() ([]*model.Task, error) {
+	tasks := make([]*model.Task, 0)
 
 	for _, file := range fs.getFailures() {
 		tk, err := New(file)
@@ -97,7 +97,7 @@ func (fs *fsStore) Cleanup() error {
 	fs.mux.Lock()
 	defer fs.mux.Unlock()
 
-	files, _ := filepath.Glob(filepath.Join(fs.root, "*", fmt.Sprintf("*.%s", awlessFileExt)))
+	files, _ := filepath.Glob(filepath.Join(fs.root, "*", fmt.Sprintf("*.%s", model.AwlessFileExt)))
 	for _, file := range files {
 		err := os.Remove(file)
 		if err != nil {
@@ -130,7 +130,7 @@ func (fs *fsStore) getFailures() []string {
 }
 
 func glob(root string) []string {
-	files, err := filepath.Glob(filepath.Join(root, fmt.Sprintf("*.%s", awlessFileExt)))
+	files, err := filepath.Glob(filepath.Join(root, fmt.Sprintf("*.%s", model.AwlessFileExt)))
 	if err != nil {
 		log.Println(err)
 	}

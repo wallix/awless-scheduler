@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"time"
+
+	"github.com/wallix/awless-scheduler/model"
 )
 
 type ticker struct {
@@ -33,7 +35,7 @@ func (t *ticker) start() {
 				}
 
 				evt := &event{tk: s}
-				evt.tpl, evt.err = s.execute(d, defaultCompileEnv)
+				evt.tpl, evt.err = executeTask(s, d, defaultCompileEnv)
 				eventc <- evt
 			}
 		}
@@ -44,13 +46,13 @@ func (t *ticker) stop() {
 	t.tick.Stop()
 }
 
-func (t *ticker) retrieveExecutableTasks() []*task {
+func (t *ticker) retrieveExecutableTasks() []*model.Task {
 	tasks, err := t.store.GetTasks()
 	if err != nil {
 		log.Println(err)
 	}
 
-	var executables []*task
+	var executables []*model.Task
 	for _, tk := range tasks {
 		if isExecutable(tk) {
 			executables = append(executables, tk)
@@ -60,7 +62,7 @@ func (t *ticker) retrieveExecutableTasks() []*task {
 	return executables
 }
 
-func isExecutable(tk *task) bool {
+func isExecutable(tk *model.Task) bool {
 	now := time.Now().UTC()
 	limit := now.Add(stillExecutable)
 	return tk.RunAt.After(limit) && now.After(tk.RunAt)

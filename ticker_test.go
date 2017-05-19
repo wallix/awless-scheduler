@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/wallix/awless-scheduler/model"
 	"github.com/wallix/awless/template"
 	"github.com/wallix/awless/template/driver"
 )
@@ -16,32 +17,32 @@ func TestTicker(t *testing.T) {
 	now := time.Now().UTC()
 
 	// never run
-	taskStore.Create(&task{
+	taskStore.Create(&model.Task{
 		Content: "#I will never run because I'm to old",
 		RunAt:   now.Add(-80 * time.Minute), RevertAt: now,
 		Region: "us-west-1",
 	})
-	taskStore.Create(&task{
+	taskStore.Create(&model.Task{
 		Content: "create instance name=tata",
 		RunAt:   now.Add(-5 * time.Minute), RevertAt: now.Add(1 * time.Second),
 		Region: "us-west-1",
 	})
-	taskStore.Create(&task{
+	taskStore.Create(&model.Task{
 		Content: "delete instance id=toto",
 		RunAt:   now.Add(-1 * time.Minute),
 		Region:  "us-west-1",
 	})
-	taskStore.Create(&task{
+	taskStore.Create(&model.Task{
 		Content: "create group unexisting=nothing",
 		RunAt:   now.Add(-1 * time.Second),
 		Region:  "us-west-1",
 	})
-	taskStore.Create(&task{
+	taskStore.Create(&model.Task{
 		Content: "create subnet cidr=10.0.0.0/24",
 		RunAt:   now.Add(2 * time.Second),
 		Region:  "us-west-1",
 	})
-	taskStore.Create(&task{
+	taskStore.Create(&model.Task{
 		Content: "#test will stop before I run",
 		RunAt:   now.Add(30 * time.Minute),
 		Region:  "us-west-1",

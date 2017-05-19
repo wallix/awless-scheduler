@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/wallix/awless-scheduler/model"
 )
 
 func TestUnixSockClient(t *testing.T) {
@@ -24,7 +26,7 @@ func TestUnixSockClient(t *testing.T) {
 	}
 
 	discoveryService := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := json.Marshal(&ServiceInfo{ServiceAddr: addr.String(), UnixSockMode: true})
+		b, _ := json.Marshal(&model.ServiceInfo{ServiceAddr: addr.String(), UnixSockMode: true})
 		w.Write(b)
 	}))
 	defer discoveryService.Close()
@@ -59,7 +61,7 @@ func TestUnixSockClient(t *testing.T) {
 func TestHTTPClient(t *testing.T) {
 	schedulerAddr := "localhost:9096"
 	discoveryService := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := json.Marshal(&ServiceInfo{ServiceAddr: "http://" + schedulerAddr, UnixSockMode: false, TickerFrequency: "1m0s"})
+		b, _ := json.Marshal(&model.ServiceInfo{ServiceAddr: "http://" + schedulerAddr, UnixSockMode: false, TickerFrequency: "1m0s"})
 		w.Write(b)
 	}))
 	defer discoveryService.Close()

@@ -103,13 +103,13 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatalf("got %d, want %d", got, want)
 		}
 
-		task := convert(tasks[0])
+		task := tasks[0]
 
 		env := newTemplateEnv(func(key string) (template.Definition, bool) {
 			return template.Definition{ExtraParams: []string{"name", "user"}}, true
 		})
 
-		if _, err = task.execute(&happyDriver{}, env); err != nil {
+		if _, err = executeTask(task, &happyDriver{}, env); err != nil {
 			t.Fatal(err)
 		}
 
@@ -142,12 +142,12 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatalf("got %d, want %d", got, want)
 		}
 
-		task := convert(tasks[0])
+		task := tasks[0]
 
 		env := newTemplateEnv(func(key string) (template.Definition, bool) {
 			return template.Definition{RequiredParams: []string{"name", "user"}}, true
 		})
-		if _, err := task.execute(&failDriver{}, env); err == nil {
+		if _, err := executeTask(task, &failDriver{}, env); err == nil {
 			t.Fatal("expected error, got nil")
 		}
 
@@ -173,13 +173,4 @@ func TestTasksAPI(t *testing.T) {
 			t.Fatalf("got \n%q\nwant\n%q\n", got, want)
 		}
 	})
-}
-
-func convert(t *client.Task) *task {
-	return &task{
-		Content:  t.Content,
-		Region:   t.Region,
-		RevertAt: t.RevertAt,
-		RunAt:    t.RunAt,
-	}
 }

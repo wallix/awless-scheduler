@@ -10,19 +10,14 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/wallix/awless-scheduler/model"
 )
 
 type Client struct {
 	ServiceURL  *url.URL
-	serviceInfo *ServiceInfo
+	serviceInfo *model.ServiceInfo
 	httpClient  *http.Client
-}
-
-type ServiceInfo struct {
-	Uptime          string
-	ServiceAddr     string
-	TickerFrequency string
-	UnixSockMode    bool
 }
 
 func New(discoveryURL string) (*Client, error) {
@@ -33,7 +28,7 @@ func New(discoveryURL string) (*Client, error) {
 	}
 	defer resp.Body.Close()
 
-	v := &ServiceInfo{}
+	v := &model.ServiceInfo{}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read body at discovery enpoint '%s', status code %s. Error: %s", discoveryURL, resp.Status, err)
@@ -74,13 +69,6 @@ func newUnixSock(u string) *Client {
 	}
 }
 
-type Task struct {
-	Content  string
-	RunAt    time.Time
-	RevertAt time.Time
-	Region   string
-}
-
 type Form struct {
 	Region, RunIn, RevertIn string
 	Template                string
@@ -98,12 +86,12 @@ func (c *Client) Ping() error {
 	return notOKStatus(addr.String(), resp)
 }
 
-func (c *Client) ServiceInfo() ServiceInfo {
+func (c *Client) ServiceInfo() model.ServiceInfo {
 	return *c.serviceInfo
 }
 
-func (c *Client) ListTasks() ([]*Task, error) {
-	var tasks []*Task
+func (c *Client) ListTasks() ([]*model.Task, error) {
+	var tasks []*model.Task
 
 	addr := *c.ServiceURL
 	addr.Path = "tasks"
@@ -125,8 +113,8 @@ func (c *Client) ListTasks() ([]*Task, error) {
 	return tasks, nil
 }
 
-func (c *Client) ListFailures() ([]*Task, error) {
-	var tasks []*Task
+func (c *Client) ListFailures() ([]*model.Task, error) {
+	var tasks []*model.Task
 
 	addr := *c.ServiceURL
 	addr.Path = "failures"

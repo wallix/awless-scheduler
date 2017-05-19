@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/wallix/awless-scheduler/model"
 	"github.com/wallix/awless/aws"
 	"github.com/wallix/awless/aws/driver"
 	"github.com/wallix/awless/template"
@@ -147,16 +148,11 @@ func (s *Service) startDiscoveryEnpoint() {
 	started := time.Now()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		v := struct {
-			TickFrequency string
-			Uptime        string
-			ServiceAddr   string
-			UnixSockMode  bool
-		}{
-			TickFrequency: (*tickerFrequency).String(),
-			Uptime:        time.Since(started).String(),
-			ServiceAddr:   s.addr(),
-			UnixSockMode:  !s.httpMode,
+		v := model.ServiceInfo{
+			TickerFrequency: (*tickerFrequency).String(),
+			Uptime:          time.Since(started).String(),
+			ServiceAddr:     s.addr(),
+			UnixSockMode:    !s.httpMode,
 		}
 		b, err := json.MarshalIndent(v, "", " ")
 		if err != nil {
@@ -217,7 +213,7 @@ func listFailures(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func marshalTasks(tasks []*task) ([]byte, error) {
+func marshalTasks(tasks []*model.Task) ([]byte, error) {
 	sort.Slice(tasks, func(i int, j int) bool { return !tasks[i].RunAt.Before(tasks[j].RunAt) })
 
 	b, err := json.MarshalIndent(tasks, "", " ")
@@ -296,7 +292,7 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tk := &task{Content: string(tplTxt), RunAt: runAt, RevertAt: revertAt, Region: region}
+	tk := &model.Task{Content: string(tplTxt), RunAt: runAt, RevertAt: revertAt, Region: region}
 
 	if err := taskStore.Create(tk); err != nil {
 		log.Println(err.Error())

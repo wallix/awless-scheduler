@@ -5,11 +5,12 @@ import (
 
 	"log"
 
+	"github.com/wallix/awless-scheduler/model"
 	"github.com/wallix/awless/template"
 )
 
 type event struct {
-	tk  *task
+	tk  *model.Task
 	tpl *template.Template
 	err error
 }
