@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	discoveryHostport = flag.String("discovery-hostport", "localhost:8082", "Listening host:port for the discovery service")
-	schedulerHostport = flag.String("scheduler-hostport", "localhost:8083", "Listening host:port for the scheduler service")
+	discoveryHostport = flag.String("discovery-hostport", ":8082", "Listening host:port for the discovery service")
+	schedulerHostport = flag.String("scheduler-hostport", ":8083", "Listening host:port for the scheduler service")
 	httpMode          = flag.Bool("http-mode", false, "Scheduler service on HTTP")
 	tickerFrequency   = flag.Duration("tick-frequency", 1*time.Minute, "ticker frequency to run executable tasks")
 	debug             = flag.Bool("debug", false, "print debug messages")
