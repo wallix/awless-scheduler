@@ -24,7 +24,7 @@ Description=Awless Scheduler Daemon
 After=network.target
 
 [Service]
-ExecStart="/var/awless-scheduler/bin/awless-scheduler"
+ExecStart=/var/awless-scheduler/bin/awless-scheduler -http-mode
 Restart=always
 
 [Install]
