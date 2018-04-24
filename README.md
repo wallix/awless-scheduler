@@ -1,3 +1,6 @@
+DEPRECATED UNTIL SCHEDULER IS UP TO DATE WITH LATEST AWLESS VERSION
+
+
 # awless-scheduler
 
 The scheduler service is a daemon service that receives templates to be ran and reverted at a later time. 
